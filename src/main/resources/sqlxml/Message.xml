@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+       Copyright 2009-2016 the original author or authors.
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+
+-->
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 实体类与数据库中表的映射关系配置文件 -->
+<!-- 指定该表的名字空间 -->
+<mapper namespace="Message">
+<!-- 
+    type: 对应包下的类
+ -->
+  <resultMap type="com.my.entity.Message" id="MessageResult">
+  <!-- 对应表中的字段
+        column: 字段名
+        jdbcType: 数据类型
+        property: 类的属性名
+   -->
+    <id column="ID" jdbcType="INTEGER" property="id"/>
+    <result column="COMMAND" jdbcType="VARCHAR" property="command"/>
+    <result column="DESCRIPTION" jdbcType="VARCHAR" property="description"/>
+    <result column="CONTENT" jdbcType="VARCHAR" property="content"/>
+  </resultMap>
+
+<!-- 添加一条sql语句 -->
+    <!--
+     id: mybatis方法通过该id调用该sql语句
+     parameterType：sql执行返回的结果的类型
+     -->
+  <select id="getMessageList" parameterType="com.my.entity.Message" resultMap="MessageResult">
+    SELECT ID, COMMAND, DESCRIPTION,CONTENT FROM message
+    <where>
+    <!-- 这里使用了ognl表达式中的if，ognl表达式支持直接调用java中的方法，
+        &quot;: &对应的转义字符
+     -->
+    <if test="command != null and !&quot;&quot;.equals(command.trim())">
+    and COMMAND=#{command}
+    </if>
+    <if test="description != null and !&quot;&quot;.equals(description.trim())">
+    and DESCRIPTION like '%' #{description} '%'
+    </if>
+    </where>
+ 
+  </select>
+  <!-- 删除一条记录 -->
+  <delete id="deleteOneMessage" parameterType="int" >
+    delete from message where id=#{_parameter}
+  </delete>
+  <delete id="deleteMessages" parameterType="java.util.List">
+    delete from message where ID in(
+     <foreach collection="list" item="item" separator=",">
+        #{item}
+     </foreach>  
+    )
+  </delete>
+  
+  <insert id="addNewMessage" parameterType="com.my.entity.Message">
+  INSERT INTO message (COMMAND, DESCRIPTION, CONTENT) values(#{command}, #{description}, #{content})
+  </insert>
+</mapper>

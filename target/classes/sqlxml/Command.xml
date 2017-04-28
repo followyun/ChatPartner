@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+       Copyright 2009-2016 the original author or authors.
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+
+-->
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 实体类与数据库中表的映射关系配置文件 -->
+<!-- 指定该表的名字空间 -->
+<mapper namespace="com.my.entity.ICommand">
+<!-- 
+    type: 对应包下的类
+ -->
+  <resultMap type="com.my.entity.Command" id="CommandResult">
+  <!-- 对应表中的字段
+        column: 字段名
+        jdbcType: 数据类型
+        property: 类的属性名
+   -->
+    <id column="C_ID" jdbcType="INTEGER" property="id"/>
+    <result column="C_NAME" jdbcType="VARCHAR" property="name"/>
+    <result column="DESCRIPTION" jdbcType="VARCHAR" property="description"/>
+    <collection property="contentList" resultMap="com.my.entity.ICommandContents.CommandContentsResult"></collection>
+  </resultMap>
+    
+<!-- 添加一条sql语句 -->
+    <!--
+     id: mybatis方法通过该id调用该sql语句
+     -->
+  <select id="getCommandList" parameterType="com.my.entity.Command" resultMap="CommandResult">
+    SELECT a.ID as C_ID, a.NAME as C_NAME, a.DESCRIPTION, b.ID, b.CONTENT, b.NAME, b.COMMAND_ID FROM command as a left join command_content as b
+     on a.ID = b.COMMAND_ID 
+    <where>
+    <!-- 这里使用了ognl表达式中的if，ognl表达式支持直接调用java中的方法，
+        &quot;: &对应的转义字符
+     -->
+    <if test="name != null and !&quot;&quot;.equals(name.trim())">
+    and a.NAME=#{name}
+    </if>
+    <if test="description != null and !&quot;&quot;.equals(description.trim())">
+    and a.DESCRIPTION like '%' #{description} '%'
+    </if>
+    </where>
+ 
+  </select>
+  
+  <select id="getCommandListByPage" parameterType="java.util.Map" resultMap="CommandResult">
+    SELECT a.ID as C_ID, a.NAME as C_NAME, a.DESCRIPTION, b.ID, b.CONTENT, b.NAME, b.COMMAND_ID FROM(SELECT ID, NAME, DESCRIPTION FROM command limit #{dbIndex}, #{dbNumber})AS a left join command_content as b
+     on a.ID = b.COMMAND_ID
+  </select>
+  
+  <!-- 删除一条记录 -->
+  <delete id="deleteOneById" parameterType="int" >
+    delete from command where id=#{_parameter}
+  </delete>
+  
+  <!-- 删除多条记录 -->
+  <delete id="deleteMany" parameterType="java.util.List">
+    delete from command where ID in(
+     <foreach collection="list" item="item" separator=",">
+        #{item}
+     </foreach>  
+    )
+  </delete>
+  
+  <insert id="addOne" parameterType="com.my.entity.Command">
+  INSERT INTO command (NAME, DESCRIPTION) values(#{name}, #{description})
+  </insert>
+  
+  <!-- 查询记录数 -->
+  <select id="getCommandCounts" resultType="int">
+    SELECT count(*) FROM command
+  </select>
+  
+  <!-- 获取最大id的值 -->
+  <select id="getMaxId" resultType="int">
+    SELECT max(ID) FROM command
+  </select>
+</mapper>
